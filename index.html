@@ -163,37 +163,39 @@ const scriptURLs = {
   }
 
   // 🔹 Kirim data ke spreadsheet sesuai kelas
-  kirimBtn.addEventListener("click", () => {
-    const kelas = kelasSelect.value;
+kirimBtn.addEventListener("click", () => {
+  const kelas = kelasSelect.value;
 
-    if (!kelas) {
-      alert("⚠️ Silakan pilih kelas terlebih dahulu!");
-      return;
-    }
+  if (!kelas) {
+    alert("⚠️ Silakan pilih kelas terlebih dahulu!");
+    return;
+  }
 
-    const scriptURL = scriptURLs[kelas];
-    if (!scriptURL) {
-      alert("URL untuk kelas ini belum diatur!");
-      return;
-    }
+  const scriptURL = scriptURLs[kelas];
+  if (!scriptURL) {
+    alert("URL untuk kelas ini belum diatur!");
+    return;
+  }
 
-    const tanggal = new Date().toLocaleDateString("id-ID");
-    const url = `${scriptURL}?nama=${encodeURIComponent(scannedData)}&tanggal=${encodeURIComponent(tanggal)}`;
+  const tanggal = new Date().toLocaleDateString("id-ID");
+  const url = `${scriptURL}?nama=${encodeURIComponent(scannedData)}&tanggal=${encodeURIComponent(tanggal)}`;
 
-    resultDiv.innerHTML = "⏳ Sedang mengirim data... mohon tunggu";
+  // 🔹 Sembunyikan tombol saat proses kirim dimulai
+  resultDiv.innerHTML = "⏳ Sedang mengirim data... mohon tunggu";
+  kirimBtn.style.display = "none";
+  batalBtn.style.display = "none";
 
-    fetch(url)
-      .then(() => {
-        resultDiv.innerHTML = `<strong style="color:green;">✅ Data berhasil dikirim ke kelas ${kelas}!</strong><br>${scannedData}`;
-        kirimBtn.style.display = "none";
-        batalBtn.style.display = "none";
-        rescanBtn.style.display = "inline-block";
-      })
-      .catch((err) => {
-        resultDiv.innerHTML = `<span style="color:red;">❌ Gagal mengirim data. Coba lagi.</span>`;
-        console.error(err);
-      });
-  });
+  fetch(url)
+    .then(() => {
+      resultDiv.innerHTML = `<strong style="color:green;">✅ Data berhasil dikirim ke kelas ${kelas}!</strong><br>${scannedData}`;
+      rescanBtn.style.display = "inline-block";
+    })
+    .catch((err) => {
+      resultDiv.innerHTML = `<span style="color:red;">❌ Gagal mengirim data. Coba lagi.</span>`;
+      console.error(err);
+    });
+});
+
 
   // 🔹 Tombol Batal → kembali ke mode scan
   batalBtn.addEventListener("click", () => {
