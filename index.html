@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi Barcode Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      position: relative;
+      text-align: center;
+      padding: 20px;
+      background: #2196F3;
+      color: white;
+    }
+
+    .header h2, .header h3 {
+      margin: 5px 0;
+    }
+
+    /* 🔹 Dropdown kelas */
+    .kelas-selector {
+      margin-top: 15px;
+    }
+
+    select {
+      font-size: 16px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    #reader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 400px;
+      background-color: #87CEFA;
+      border-radius: 12px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    #reader video {
+      width: 100% !important;
+      height: auto !important;
+      border-radius: 10px;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+    }
+
+    #kirimBtn { background-color: #4CAF50; }
+    #batalBtn { background-color: #f44336; }
+    #rescanBtn { background-color: #2196F3; }
+
+    .btn:hover { opacity: 0.9; }
+
+    iframe {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="https://edoadityasaputra.github.io/barcode-to-sheet/MI-Khoirul-Huda_C3.png" 
+         alt="Logo MI Khoirul Huda" 
+         style="width: 120px; height: auto; border-radius: 10px; margin-bottom: 10px;">
+    <h2>Scan Presensi Informatika</h2>
+    <h3>MI Khoirul Huda Bedahan</h3>
+
+    <!-- 🔹 Tambahan dropdown pilihan kelas -->
+    <div class="kelas-selector">
+      <label for="kelas">Pilih Kelas: </label>
+      <select id="kelas">
+        <option value="" disabled selected>-- Pilih Kelas --</option>
+        <option value="4A">Kelas 4A</option>
+        <option value="4B">Kelas 4B</option>
+        <option value="4C">Kelas 4C</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="reader"></div>
+  <div id="result"></div>
+
+  <button id="kirimBtn" class="btn" style="display:none;">Kirim</button>
+  <button id="batalBtn" class="btn" style="display:none;">Batal</button>
+  <button id="rescanBtn" class="btn" style="display:none;">Scan Ulang</button>
+
+  <iframe id="formFrame" name="formFrame"></iframe>
+
+  <script>
+  // 🔹 Daftar URL Google Apps Script per kelas
+  const scriptURLs = {
+    "4A": "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec",
+    "4B": "https://script.google.com/macros/s/AKfycbyEXAMPLE_FOR_4B/exec",
+    "4C": "https://script.google.com/macros/s/AKfycbyEXAMPLE_FOR_4C/exec"
+  };
+
+  const readerDiv = document.getElementById("reader");
+  const resultDiv = document.getElementById("result");
+  const kirimBtn = document.getElementById("kirimBtn");
+  const batalBtn = document.getElementById("batalBtn");
+  const rescanBtn = document.getElementById("rescanBtn");
+  const kelasSelect = document.getElementById("kelas");
+
+  let html5QrCode;
+  let scannedData = "";
+
+  // 🔹 Fungsi untuk memulai scanner
+  function startScanner() {
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        scannedData = decodedText;
+        resultDiv.innerHTML = `<strong>Data Terdeteksi:</strong><br>${decodedText}`;
+        kirimBtn.style.display = "inline-block";
+        batalBtn.style.display = "inline-block";
+        html5QrCode.stop().then(() => html5QrCode.clear());
+      },
+      (errorMessage) => {}
+    ).catch((err) => console.error(err));
+  }
+
+  // 🔹 Kirim data ke spreadsheet sesuai kelas
+  kirimBtn.addEventListener("click", () => {
+    const kelas = kelasSelect.value;
+
+    if (!kelas) {
+      alert("⚠️ Silakan pilih kelas terlebih dahulu!");
+      return;
+    }
+
+    const scriptURL = scriptURLs[kelas];
+    if (!scriptURL) {
+      alert("URL untuk kelas ini belum diatur!");
+      return;
+    }
+
+    const tanggal = new Date().toLocaleDateString("id-ID");
+    const url = `${scriptURL}?nama=${encodeURIComponent(scannedData)}&tanggal=${encodeURIComponent(tanggal)}`;
+
+    resultDiv.innerHTML = "⏳ Sedang mengirim data... mohon tunggu";
+
+    fetch(url)
+      .then(() => {
+        resultDiv.innerHTML = `<strong style="color:green;">✅ Data berhasil dikirim ke kelas ${kelas}!</strong><br>${scannedData}`;
+        kirimBtn.style.display = "none";
+        batalBtn.style.display = "none";
+        rescanBtn.style.display = "inline-block";
+      })
+      .catch((err) => {
+        resultDiv.innerHTML = `<span style="color:red;">❌ Gagal mengirim data. Coba lagi.</span>`;
+        console.error(err);
+      });
+  });
+
+  // 🔹 Tombol Batal → kembali ke mode scan
+  batalBtn.addEventListener("click", () => {
+    resultDiv.innerHTML = "Kembali ke mode scan...";
+    kirimBtn.style.display = "none";
+    batalBtn.style.display = "none";
+    setTimeout(() => {
+      resultDiv.innerHTML = "";
+      startScanner();
+    }, 500);
+  });
+
+  // 🔹 Tombol Scan Ulang → mulai lagi dari awal
+  rescanBtn.addEventListener("click", () => {
+    rescanBtn.style.display = "none";
+    resultDiv.innerHTML = "";
+    startScanner();
+  });
+
+  // 🔹 Jalankan scanner pertama kali
+  startScanner();
+</script>
+
+</body>
+</html>
